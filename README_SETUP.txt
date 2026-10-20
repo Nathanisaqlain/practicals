@@ -1,28 +1,19 @@
-JOILE FIZZ ERP — SECURE LOGIN IMPLEMENTATION PACKAGE
+JOILE FIZZ ERP — ACCOUNT REGISTRATION UPDATE
 
-This package adds a server-side login gate and employee account-management UI to the existing ERP, plus a Flask backend with hashed passwords, HTTP-only sessions, Admin-only user management, role checks, and a version-checked protected data API.
+Files: index.html, server.py, requirements.txt
 
-IMPORTANT IMPLEMENTATION STATUS
-The login and employee-management UI calls the protected server API. However, the existing ERP's business forms still use browser localStorage for their business records. They are NOT yet wired to /api/data. Therefore this is an authentication integration starter, not a complete shared-database migration. Do not enter real financial data or assume all modules are protected by roles until that migration and per-module authorization are completed. The legacy Google Sheets sync controls were removed from the page so the old public endpoint is not used by this package.
+New feature:
+- Sign-in page has a “Create a new account” option.
+- New accounts are inserted into the server SQLite users table.
+- Passwords are stored as secure password hashes, not plain text.
+- Public self-registration assigns Viewer (read-only) role. An Admin must assign appropriate access; public users cannot register themselves as Admin.
+- Existing Admin can continue creating employee accounts and assigning roles from the Employee account management panel.
 
-DEPLOYMENT
-1. Use a Python web host that supports Flask and persistent disk. For multiple application instances, change SQLite to managed PostgreSQL before production.
-2. Upload index.html, server.py, requirements.txt.
-3. Configure environment variable JOILE_SECRET_KEY as a long random secret in the host's secret settings. Keep COOKIE_SECURE=1 on HTTPS.
-4. Start command: gunicorn server:app
-5. Visit /api/setup once with a JSON POST body such as {"username":"your-admin-name","password":"use-a-unique-password-at-least-14-chars"}. Use an API client or host console; do not put the password into a public link.
-6. After creating the admin, disable/remove the /api/setup route and redeploy.
-7. Sign in through the website. Admin can create employee users with a long unique password and roles Accountant, Sales, Stock/Warehouse, or Viewer.
+Deploy to Render:
+1. Replace index.html and server.py in your GitHub repository with these versions.
+2. Keep requirements.txt and the existing Render start command: gunicorn server:app
+3. Render should redeploy automatically after the GitHub commit. Wait for deployment to finish, then refresh the website.
+4. Test “Create a new account” using a new username and a password at least 14 characters long.
 
-ROLE RULES
-Admin: account management and all sections.
-Accountant: finance/accounting-related sections.
-Sales: customer, item, sales invoice and delivery challan sections.
-Stock/Warehouse: items, delivery challan and stock movements.
-Viewer: limited read-only section list.
-
-BEFORE REAL USE
-- Wire all ERP reads/writes from localStorage to authenticated /api/data or preferably normalized per-module API routes.
-- Enforce permissions per module and per record on the server; hiding navigation is not security.
-- Add CSRF protection, login rate limiting, password reset, audit logs, backups/restore tests, and managed PostgreSQL for multi-instance deployments.
-- Test using dummy records. No live website has been deployed from this package; deployment requires your hosting account.
+IMPORTANT STORAGE NOTE:
+The app uses SQLite. On Render, a local SQLite file may be lost when the service is redeployed/restarted unless a persistent disk is attached and JOILE_DB_PATH points to that disk. Before using real company data, configure persistent storage (or a managed database) and verify backups. This update adds server-side account creation, but does not by itself migrate all ERP business records from browser localStorage into the server database.

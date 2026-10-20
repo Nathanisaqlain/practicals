@@ -45,6 +45,19 @@ def setup():
  b=request.get_json(silent=True) or {};name=str(b.get('username','')).strip();pw=str(b.get('password',''))
  if len(name)<3 or len(pw)<14:c.close();return jsonify(error='Username must be 3+ characters and password at least 14 characters'),400
  c.execute('INSERT INTO users(username,password_hash,role) VALUES(?,?,?)',(name,generate_password_hash(pw),'Admin'));c.commit();c.close();return jsonify(ok=True,message='Admin created; disable /api/setup after first use')
+@app.post('/api/register')
+def register():
+ # Public self-registration creates a least-privilege Viewer account only.
+ b=request.get_json(silent=True) or {};name=str(b.get('username','')).strip();pw=str(b.get('password',''))
+ if len(name)<3 or len(name)>80 or len(pw)<14:
+  return jsonify(error='Username must be 3–80 characters and password at least 14 characters'),400
+ c=connect()
+ try:
+  c.execute('INSERT INTO users(username,password_hash,role) VALUES(?,?,?)',(name,generate_password_hash(pw),'Viewer'));c.commit()
+ except sqlite3.IntegrityError:
+  c.close();return jsonify(error='That username already exists'),409
+ c.close();return jsonify(ok=True,message='Account created. You can now sign in.',role='Viewer'),201
+
 @app.post('/api/login')
 def login():
  b=request.get_json(silent=True) or {};c=connect();u=c.execute('SELECT * FROM users WHERE username=? AND active=1',(str(b.get('username','')).strip(),)).fetchone();c.close()
